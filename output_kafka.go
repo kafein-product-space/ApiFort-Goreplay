@@ -2,11 +2,12 @@ package goreplay
 
 import (
 	"encoding/json"
-	"github.com/buger/goreplay/internal/byteutils"
-	"github.com/buger/goreplay/proto"
 	"log"
 	"strings"
 	"time"
+
+	"github.com/buger/goreplay/internal/byteutils"
+	"github.com/buger/goreplay/proto"
 
 	"github.com/Shopify/sarama"
 	"github.com/Shopify/sarama/mocks"
@@ -33,6 +34,7 @@ func NewKafkaOutput(_ string, config *OutputKafkaConfig, tlsConfig *KafkaTLSConf
 		c.Producer.RequiredAcks = sarama.WaitForLocal
 		c.Producer.Compression = sarama.CompressionSnappy
 		c.Producer.Flush.Frequency = KafkaOutputFrequency * time.Millisecond
+		c.Producer.Partitioner = sarama.NewRoundRobinPartitioner
 
 		brokerList := strings.Split(config.Host, ",")
 
@@ -78,14 +80,14 @@ func (o *KafkaOutput) PluginWrite(msg *Message) (n int, err error) {
 		req := msg.Data
 
 		kafkaMessage := KafkaMessage{
-			ReqURL:     byteutils.SliceToString(proto.Path(req)),
-			ReqType:    byteutils.SliceToString(meta[0]),
-			ReqID:      byteutils.SliceToString(meta[1]),
-			ReqTs:      byteutils.SliceToString(meta[2]),
-			ReqMethod:  byteutils.SliceToString(proto.Method(req)),
-			ReqStatus:  byteutils.SliceToString(proto.Status(req)),
-			ReqBody:    byteutils.SliceToString(proto.Body(req)),
-			ReqHeaders: header,
+			ReqURL:       byteutils.SliceToString(proto.Path(req)),
+			ReqType:      byteutils.SliceToString(meta[0]),
+			ReqID:        byteutils.SliceToString(meta[1]),
+			ReqTs:        byteutils.SliceToString(meta[2]),
+			ReqMethod:    byteutils.SliceToString(proto.Method(req)),
+			ReqStatus:    byteutils.SliceToString(proto.Status(req)),
+			ReqBody:      byteutils.SliceToString(proto.Body(req)),
+			ReqHeaders:   header,
 			CollectionId: o.config.CollectionId,
 		}
 		jsonMessage, _ := json.Marshal(&kafkaMessage)
